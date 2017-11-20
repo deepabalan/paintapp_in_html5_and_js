@@ -1,0 +1,61 @@
+
+
+<style>
+    #container {position: relative; }
+    #paintapp {border: 1px solid #ccc; }
+</style>
+
+<div id="container">
+    <canvas id="paintapp" width="500" height="400"></canvas>
+</div>
+
+<script>
+    if(window.addEventListener) {
+        window.addEventListener("load", function () {
+            var canvas_a, context, tool;
+            function init () {
+                canvas_a = document.getElementById("paintapp");
+                context = canvas_a.getContext("2d");
+                tool = new pencil();    // new tool instance, pencil
+                canvas_a.addEventListener("mousedown", move_event, false);
+                canvas_a.addEventListener("mousemove", move_event, false);
+                canvas_a.addEventListener("mouseup", move_event, false);
+            }
+            function pencil () {
+                var tool = this;
+                this.started = false;
+                this.mousedown = function (evnt) {
+                    context.beginPath();
+                    context.moveTo(evnt.x, evnt.y);
+                    tool.started = true;
+                };
+                this.mousemove = function (evnt) {
+                    if (tool.started) {
+                        context.lineTo(evnt.x, evnt.y);
+                        context.stroke();
+                    }
+                };
+                this.mouseup = function (evnt) {
+                    if (tool.started) {
+                        tool.mousemove(evnt);
+                        tool.started = false;
+                    }
+                };
+            }
+            function move_event (evnt) {
+                if (evnt.layerX || evnt.layerX == 0) {
+                    evnt.x = evnt.layerX;
+                    evnt.y = evnt.layerY;
+                } else if (evnt.offsetX || evnt.offsetX == 0) {
+                    evnt.x = evnt.offsetX;
+                    evnt.y = evnt.offsetY;
+                }
+                var tool_evnt = tool[evnt.type];
+                if (tool_evnt) {
+                    tool_evnt(evnt);
+                }
+            }
+            init();
+        }, false); 
+    } 
+</script>
