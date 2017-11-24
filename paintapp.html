@@ -1,10 +1,30 @@
-
-
-<style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>paintapp in html5 canvas and js</title>
+    <link rel="stylesheet" href="paintapp.css">
+<!--    <style>
     #container {position: relative; }
     #paintapp {border: 1px solid #ccc; }
-</style>
-
+    #imageTemp { position: absolute; top: 1px; left: 1px; }
+    </style> -->
+</head>
+<body>
+    <p><label>Drawing Tool: <select id="dtool">
+        <option value="line">Line</option>
+        <option value="rect">Rectangle</option>
+        <option value="pencil">Pencil</option>
+    </select></label></p>
+<div id="colors">
+    <button id="red" onclick="changeColor('red')"></button>
+    <button id="black" onclick="changeColor('black')"></button>
+    <button id="yellow" onclick="changeColor('yellow')"></button>
+    <button id="blue" onclick="changeColor('blue')"></button>
+</div>
+<div id="erasor">
+    <button id="image" onclick="eraseImage()"></button>
+</div>
 <div id="container">
     <canvas id="paintapp" width="500" height="400"></canvas>
 </div>
@@ -12,16 +32,61 @@
 <script>
     if(window.addEventListener) {
         window.addEventListener("load", function () {
-            var canvas_a, context, tool;
+            var canvas, context, canvaso, contexto;
+
+            var tool;
+            var tool_default = "line";
+
             function init () {
-                canvas_a = document.getElementById("paintapp");
-                context = canvas_a.getContext("2d");
-                tool = new pencil();    // new tool instance, pencil
-                canvas_a.addEventListener("mousedown", move_event, false);
-                canvas_a.addEventListener("mousemove", move_event, false);
-                canvas_a.addEventListener("mouseup", move_event, false);
+                canvaso = document.getElementById("paintapp");
+                contexto = canvaso.getContext("2d");
+
+                var container = canvaso.parentNode;
+                canvas = document.createElement('canvas');
+
+                canvas.id = "imageTemp";
+                canvas.width = canvaso.width;
+                canvas.height = canvaso.height;
+                container.appendChild(canvas);
+
+                context = canvas.getContext("2d");
+
+                var tool_select = document.getElementById("dtool");
+                
+                tool_select.addEventListener("change", evnt_tool_change, false);
+
+                if (tools[tool_default]) {
+                    tool = new tools[tool_default]();
+                    tool_select.value = tool_default;
+                }
+                canvas.addEventListener("mousedown", move_event, false);
+                canvas.addEventListener("mousemove", move_event, false);
+                canvas.addEventListener("mouseup", move_event, false);
             }
-            function pencil () {
+            function move_event (evnt) {
+                if (evnt.layerX || evnt.layerX == 0) {
+                    evnt.x = evnt.layerX;
+                    evnt.y = evnt.layerY;
+                } else if (evnt.offsetX || evnt.offsetX == 0) {
+                    evnt.x = evnt.offsetX;
+                    evnt.y = evnt.offsetY;
+                }
+                var func = tool[evnt.type];
+                if (func) {
+                    func(evnt);
+                }
+            }
+            function evnt_tool_change (evnt) {
+                if (tools[this.value]) {
+                    tool = new tools[this.value]();
+                }
+            }
+            function img_update () {
+                contexto.drawImage(canvas, 0, 0);
+                context.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            var tools = {};
+            tools.pencil = function () {
                 var tool = this;
                 this.started = false;
                 this.mousedown = function (evnt) {
@@ -39,23 +104,84 @@
                     if (tool.started) {
                         tool.mousemove(evnt);
                         tool.started = false;
+                        img_update();
                     }
                 };
+            };
+            tools.rect = function () {
+                var tool = this;
+                this.started = false;
+
+                this.mousedown = function (evnt) {
+                    tool.started = true;
+                    tool.x0 = evnt.x;
+                    tool.y0 = evnt.y;
+                };
+                this.mousemove = function (evnt) {
+                    if (!tool.started) {
+                        return;
+                    }
+                    var x = Math.min(evnt.x, tool.x0),
+                        y = Math.min(evnt.y, tool.y0),
+                        w = Math.abs(evnt.y - tool.x0),
+                        h = Math.abs(evnt.y - tool.y0);
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+
+                    if (!w || !h) {
+                        return;
+                    }
+                    context.strokeRect(x, y, w, h);
+                };
+                this.mouseup = function (evnt) {
+                    if (tool.started) {
+                        tool.mousemove(evnt);
+                        img_update();
+                    }
+                };
+            };
+            tools.line = function () {
+                var tool = this;
+                this.started = false;
+
+                this.mousedown = function (evnt) {
+                    tool.started = true;
+                    tool.x0 = evnt.x;
+                    tool.y0 = evnt.y;
+                };
+                this.mousemove = function (evnt) {
+                    if (!tool.started) {
+                        return;
+                    }
+                     
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+
+                    context.beginPath();
+                    context.moveTo(tool.x0, tool.y0);
+                    context.lineTo(evnt.x, evnt.y);
+                    context.stroke();
+                    context.closePath();
+                };
+                this.mouseup = function (evnt) {
+                    if (tool.started) {
+                        tool.mousemove(evnt);
+                        tool.started = false;
+                        img_update();
+                    }
+                };
+            };
+            var color = document.getElementById("colors");
+            function changeColor(color) {
+                context.strokeStyle = color;
+                context.fillStyle = color;
             }
-            function move_event (evnt) {
-                if (evnt.layerX || evnt.layerX == 0) {
-                    evnt.x = evnt.layerX;
-                    evnt.y = evnt.layerY;
-                } else if (evnt.offsetX || evnt.offsetX == 0) {
-                    evnt.x = evnt.offsetX;
-                    evnt.y = evnt.offsetY;
-                }
-                var tool_evnt = tool[evnt.type];
-                if (tool_evnt) {
-                    tool_evnt(evnt);
-                }
+            function eraseImage() {
+                context.globalCompositeOperation = "destination-out";
+                context.strokeStyle = "white";
             }
+            
             init();
         }, false); 
     } 
 </script>
+</body>
+</html>
