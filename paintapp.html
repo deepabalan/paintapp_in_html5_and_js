@@ -4,187 +4,151 @@
     <meta charset="utf-8">
     <title>paintapp in html5 canvas and js</title>
     <link rel="stylesheet" href="paintapp.css">
-<!--    <style>
-    #container {position: relative; }
-    #paintapp {border: 1px solid #ccc; }
-    #imageTemp { position: absolute; top: 1px; left: 1px; }
-    </style> -->
 </head>
 <body>
-    <p><label>Drawing Tool: <select id="dtool">
-        <option value="line">Line</option>
-        <option value="rect">Rectangle</option>
-        <option value="pencil">Pencil</option>
-    </select></label></p>
-<div id="colors">
-    <button id="red" onclick="changeColor('red')"></button>
-    <button id="black" onclick="changeColor('black')"></button>
-    <button id="yellow" onclick="changeColor('yellow')"></button>
-    <button id="blue" onclick="changeColor('blue')"></button>
-    <button id="white" onclick="changeColor('white')"></button>
-    <button id="cyan" onclick="changeColor('cyan')"></button>
-    <button id="green" onclick="changeColor('green')"></button>
-</div>
-<div id="erasor">
-    <button id="image" onclick="eraseImage()"></button>
-</div>
-<div id="container">
-    <canvas id="paintapp" width="500" height="400"></canvas>
-</div>
-
+    
+    <center>
+        <canvas id="paintapp" width="500" height="400" style="border:4px solid #ccc;"></canvas>
+    </center>
+    <center>
+    <button type= "button" onclick="line()">Line</button>
+    <button type= "button" onclick="rect()">Rectangle</button>
+    <button type= "button" onclick="pencil()">Pencil</button>
+    <button type= "button" onclick="erasor()">Erasor</button>
+    <button type= "button" onclick="clearScreen()">Reset</button>
+    </center>
+   
+    <div id="colors">
+        
+            <button id="red" onclick="changeColor('red')"></button>
+            <button id="black" onclick="changeColor('black')"></button>
+            <button id="yellow" onclick="changeColor('yellow')"></button>
+            <button id="blue" onclick="changeColor('blue')"></button>
+            <button id="brown" onclick="changeColor('brown')"></button>
+            <button id="cyan" onclick="changeColor('cyan')"></button>
+            <button id="green" onclick="changeColor('green')"></button>
+       
+    </div>
 <script>
-    if(window.addEventListener) {
-        window.addEventListener("load", function () {
-            var canvas, context, canvaso, contexto;
+    var fillFlag = 0;
+    var erasorWidth = 10;
+    var canvas = document.getElementById("paintapp");
+    var context = canvas.getContext("2d");
+    
+    function clearScreen() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    function erasor() {
+        canvas.onmousedown = erasorDown;
+        canvas.onmouseup = erasorUp;
+        canvas.onmousemove = erasorMove;
+        var draw = false;
+        function erasorDown(e) {
+            draw = true;
+        }
+        function erasorUp(e) {
+            draw = false;
+        }
+        function erasorMove(e) {
+            if(draw) {
+                startX = e.clientX - canvas.getBoundingClientRect().left;
+                startY = e.clientY - canvas.getBoundingClientRect().top;
+                context.clearRect(startX, startY, erasorWidth, erasorWidth);
+            }
+        }
+    }
+    
+    function pencil() {
+        canvas.onmousedown = pencilDown;
+        canvas.onmouseup = pencilUp;
+        canvas.onmousemove = pencilMove;
+        var drag = false;
+        function pencilDown(e) {
+            imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            startX = e.x - this.offsetLeft;
+            startY = e.y - this.offsetTop;
 
-            var tool;
-            var tool_default = "line";
+            drag = true;
+        }
+        function pencilUp() {
+            drag = false;
+        }
+        function pencilMove(e) {
+            if (drag) {
+                newX = e.clientX - canvas.getBoundingClientRect().left;
+                newY = e.clientY - canvas.getBoundingClientRect().top;
+                context.beginPath();
+                context.moveTo(startX, startY);
+                context.lineTo(newX, newY);
+                context.stroke();
+                context.closePath();
+                startX = newX;
+                startY = newY;
+            }
+        }
+    }
 
-            function init () {
-                canvaso = document.getElementById("paintapp");
-                contexto = canvaso.getContext("2d");
+    function line() {
+        canvas.onmousedown = mouseDown;
+        canvas.onmousemove = mouseMove;
+        canvas.onmouseup = mouseUp;
+        var flag = false;
+        function mouseDown(event) {
+            Data = context.getImageData(0, 0, canvas.width, canvas.height);
+            startX = event.clientX - canvas.getBoundingClientRect().left;
+            startY = event.clientY - canvas.getBoundingClientRect().top;
+            flag = true;
+        }
+        function mouseMove(event) {
+            if(flag) {
+                context.putImageData(Data, 0, 0);
+                endX = event.clientX - canvas.getBoundingClientRect().left;
+                endY = event.clientY - canvas.getBoundingClientRect().top;
+                context.beginPath()
+                context.moveTo(startX, startY);
+                context.lineTo(endX, endY);
+                context.stroke();
+                context.closePath();
+            }
+        }
+        function mouseUp() {
+            flag = false;
+        }
+    }
 
-                var container = canvaso.parentNode;
-                canvas = document.createElement('canvas');
-
-                canvas.id = "imageTemp";
-                canvas.width = canvaso.width;
-                canvas.height = canvaso.height;
-                container.appendChild(canvas);
-
-                context = canvas.getContext("2d");
-
-                var tool_select = document.getElementById("dtool");
-                
-                tool_select.addEventListener("change", evnt_tool_change, false);
-
-                if (tools[tool_default]) {
-                    tool = new tools[tool_default]();
-                    tool_select.value = tool_default;
+    function rect() {
+        canvas.onmousedown = rectDown;
+        canvas.onmouseup = rectUp;
+        canvas.onmousemove = rectMove;
+        var flag = false;
+        function rectDown(e) {
+            imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            startX = e.x - this.offsetLeft;
+            startY = e.y - this.offsetTop;
+            flag = true;
+        }
+        function rectUp(e) {
+            flag = false;
+        }
+        function rectMove(e) {
+            if (flag) {
+                context.putImageData(imageData, 0, 0);
+                rectWidth = (e.x - this.offsetLeft) - startX;
+                rectHeight = (e.y - this.offsetTop) - startY;
+                if (fillFlag == 0) {
+                    context.strokeRect(startX, startY, rectWidth, rectHeight);
+                } else {
+                    context.fillRect(startX, startY, rectWidth, rectHeight);
                 }
-                canvas.addEventListener("mousedown", move_event, false);
-                canvas.addEventListener("mousemove", move_event, false);
-                canvas.addEventListener("mouseup", move_event, false);
             }
-            function move_event (evnt) {
-                if (evnt.layerX || evnt.layerX == 0) {
-                    evnt.x = evnt.layerX;
-                    evnt.y = evnt.layerY;
-                } else if (evnt.offsetX || evnt.offsetX == 0) {
-                    evnt.x = evnt.offsetX;
-                    evnt.y = evnt.offsetY;
-                }
-                var func = tool[evnt.type];
-                if (func) {
-                    func(evnt);
-                }
-            }
-            function evnt_tool_change (evnt) {
-                if (tools[this.value]) {
-                    tool = new tools[this.value]();
-                }
-            }
-            function img_update () {
-                contexto.drawImage(canvas, 0, 0);
-                context.clearRect(0, 0, canvas.width, canvas.height);
-            }
-            var tools = {};
-            tools.pencil = function () {
-                var tool = this;
-                this.started = false;
-                this.mousedown = function (evnt) {
-                    context.beginPath();
-                    context.moveTo(evnt.x, evnt.y);
-                    tool.started = true;
-                };
-                this.mousemove = function (evnt) {
-                    if (tool.started) {
-                        context.lineTo(evnt.x, evnt.y);
-                        context.stroke();
-                    }
-                };
-                this.mouseup = function (evnt) {
-                    if (tool.started) {
-                        tool.mousemove(evnt);
-                        tool.started = false;
-                        img_update();
-                    }
-                };
-            };
-            tools.rect = function () {
-                var tool = this;
-                this.started = false;
-
-                this.mousedown = function (evnt) {
-                    tool.started = true;
-                    tool.x0 = evnt.x;
-                    tool.y0 = evnt.y;
-                };
-                this.mousemove = function (evnt) {
-                    if (!tool.started) {
-                        return;
-                    }
-                    var x = Math.min(evnt.x, tool.x0),
-                        y = Math.min(evnt.y, tool.y0),
-                        w = Math.abs(evnt.y - tool.x0),
-                        h = Math.abs(evnt.y - tool.y0);
-                    context.clearRect(0, 0, canvas.width, canvas.height);
-
-                    if (!w || !h) {
-                        return;
-                    }
-                    context.strokeRect(x, y, w, h);
-                };
-                this.mouseup = function (evnt) {
-                    if (tool.started) {
-                        tool.mousemove(evnt);
-                        img_update();
-                    }
-                };
-            };
-            tools.line = function () {
-                var tool = this;
-                this.started = false;
-
-                this.mousedown = function (evnt) {
-                    tool.started = true;
-                    tool.x0 = evnt.x;
-                    tool.y0 = evnt.y;
-                };
-                this.mousemove = function (evnt) {
-                    if (!tool.started) {
-                        return;
-                    }
-                     
-                    context.clearRect(0, 0, canvas.width, canvas.height);
-
-                    context.beginPath();
-                    context.moveTo(tool.x0, tool.y0);
-                    context.lineTo(evnt.x, evnt.y);
-                    context.stroke();
-                    context.closePath();
-                };
-                this.mouseup = function (evnt) {
-                    if (tool.started) {
-                        tool.mousemove(evnt);
-                        tool.started = false;
-                        img_update();
-                    }
-                };
-            };
-            var color = document.getElementById("colors");
-            function changeColor(color) {
-                context.strokeStyle = color;
-                context.fillStyle = color;
-            }
-            function eraseImage() {
-                context.globalCompositeOperation = "destination-out";
-                context.strokeStyle = "white";
-            }
-            
-            init();
-        }, false); 
-    } 
+        }
+    }
+    var color = document.getElementById("colors");
+    function changeColor(color) {
+        context.strokeStyle=color;
+        context.fillStyle=color;
+    }
 </script>
 </body>
 </html>
